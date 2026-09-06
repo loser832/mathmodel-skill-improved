@@ -28,6 +28,23 @@ Copy-Item -Recurse -Force ".\skills\*" $targetSkills
 
 安装后，在数学建模项目中调用 `1start-mathmodel`，由入口 skill 按阶段组织分析、建模、代码与图表、流程图、论文写作和最终验收。
 
+## codex 核心prompt
+请使用 $1start-mathmodel，读取当前赛题项目目录中的题面和全部附件，完成完整数学建模工作流。
+
+排版引擎：LaTeX
+竞赛类型：全国大学生数学建模竞赛
+论文语言：中文
+协作模式：auto
+最大并行子 agent 数：3
+结构化交叉质询：按 skill 的协作协议自动判断和执行
+
+请持续完成分析建模、代码与数据图表、流程图、论文撰写和最终验收。
+
+以 reports/VERIFY_REPORT.md 的结论为准：
+- FAIL：按照“返工任务”返回对应阶段修复，并重新验收。
+- BLOCKED：记录缺失条件，继续完成不受阻塞的工作。
+- 只有最终结论为 PASS 才视为完整工作流完成。
+
 ## 项目来源与许可
 
 本项目基于 [jihe520/MathModelAgent](https://github.com/jihe520/MathModelAgent) 的 skills 进行个人、非商业修改，并保留可追溯的差异与验证记录。使用和再分发须遵守上游的非商业与开放分发限制，详见 [LICENSE.md](LICENSE.md)。模板中的赛事标识、标题页素材及其他第三方资产，其权利仍归各自权利人所有。
