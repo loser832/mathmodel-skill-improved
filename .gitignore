@@ -1,0 +1,53 @@
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.pfx
+*.p12
+*.jks
+*.keystore
+*.kdbx
+*.ovpn
+id_rsa*
+id_ed25519*
+
+# Python environments and caches
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Local competition projects and generated case artifacts
+# (kept on disk, not published)
+/2025国赛A题/
+/2025国赛B题/
+/plan.md
+/todo.md
+/reports/
+
+# Local maintenance archives and machine-specific installation records
+/backups/
+/history/
+/installation-receipt*.json
+/manifest-multi-agent.json
+
+# PDF review workspace
+/tmp/
+
+# Editors and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
+*~

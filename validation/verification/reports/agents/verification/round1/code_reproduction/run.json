@@ -1,0 +1,17 @@
+{
+  "agent": "/root/forward_verification/code_reproduction",
+  "input_version": "round1",
+  "input_manifest_sha256": "9C5C2AB2E58FA2CE13FEDE4019EC998E3F6EDDF8396693171B86D7C556F6FD7A",
+  "command": [
+    "E:\\modex\\Modex-MH-Agent\\runtime\\python\\python.exe",
+    "code\\solve.py"
+  ],
+  "working_directory": "E:\\mathmodel\\validation\\verification\\reports\\agents\\verification\\round1\\code_reproduction\\project",
+  "python_version": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "started_utc": "2026-09-04T09:30:48.725679+00:00",
+  "finished_utc": "2026-09-04T09:30:48.785063+00:00",
+  "exit_code": 0,
+  "stdout": "{\"x\": 0, \"y\": 10, \"objective\": 20, \"feasible\": true}\r\n",
+  "stderr": "",
+  "status": "PASS"
+}

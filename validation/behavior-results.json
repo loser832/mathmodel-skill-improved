@@ -1,0 +1,65 @@
+{
+  "status": "expected_behavior_observed",
+  "recorded_at": "2026-09-04T17:36:18.217148+08:00",
+  "basis": "真实独立 agent 演练；父总控阅读总报告、专家报告及原始运行记录后核验，并重算输入哈希。",
+  "scenarios": [
+    {
+      "name": "modeling",
+      "mode": "auto",
+      "agents": [
+        "/root/forward_modeling/model_proposal",
+        "/root/forward_modeling/assumption_review"
+      ],
+      "expected_behavior_observed": true,
+      "observations": [
+        "保留两种拆单假设及基准可行性差异",
+        "识别增长后需求 21.6 大于总容量 20",
+        "总报告仍为两个顶层问题",
+        "沿用 Typst 和中文偏好",
+        "分目录写入，主控整合，无生产代码和论文越界"
+      ],
+      "source_hash_checks": {
+        "E:\\mathmodel\\validation\\modeling\\problem.md": true,
+        "E:\\mathmodel\\validation\\modeling\\plan.md": true,
+        "E:\\mathmodel\\skills\\2analysis-modeling\\SKILL.md": true,
+        "E:\\mathmodel\\skills\\1start-mathmodel\\references\\multi-agent.md": true,
+        "E:\\mathmodel\\skills\\_references\\math_modeling_norms.md": true
+      },
+      "report": "E:\\mathmodel\\validation\\modeling\\reports\\ANALYSIS_MODELING_REPORT.md"
+    },
+    {
+      "name": "verification",
+      "mode": "multi",
+      "agents": [
+        "/root/forward_verification/math_numeric",
+        "/root/forward_verification/code_reproduction"
+      ],
+      "expected_behavior_observed": true,
+      "sample_verdict": "FAIL",
+      "observations": [
+        "论文 23 与可信结果 20 冲突",
+        "代码副本真实退出 0，输出20",
+        "识别英文正文与中文计划冲突",
+        "编译和视觉检查 NOT_RUN，没有虚假 PASS",
+        "返工指向写作阶段，保留可信结果",
+        "原始八项输入未修改"
+      ],
+      "source_hash_checks": {
+        "problem.md": true,
+        "plan.md": true,
+        "reports/ANALYSIS_MODELING_REPORT.md": true,
+        "reports/RESULTS_REPORT.md": true,
+        "results/result.json": true,
+        "code/solve.py": true,
+        "paper/main.tex": true,
+        "paper/sections/1_solution.tex": true
+      },
+      "report": "E:\\mathmodel\\validation\\verification\\reports\\VERIFY_REPORT.md"
+    }
+  ],
+  "limits": [
+    "未进行单 agent 与多 agent 的质量、耗时或成本对照实验",
+    "未实际演练所有超时、失败和工具不可用分支",
+    "未执行真实竞赛论文的完整编译和逐页视觉验收"
+  ]
+}

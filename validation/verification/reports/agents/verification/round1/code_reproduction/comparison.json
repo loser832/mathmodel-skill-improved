@@ -1,0 +1,30 @@
+{
+  "fields": {
+    "feasible": {
+      "recorded": true,
+      "actual": true,
+      "equal": true
+    },
+    "objective": {
+      "recorded": 20,
+      "actual": 20,
+      "equal": true
+    },
+    "x": {
+      "recorded": 0,
+      "actual": 0,
+      "equal": true
+    },
+    "y": {
+      "recorded": 10,
+      "actual": 10,
+      "equal": true
+    }
+  },
+  "input_hashes_unchanged": true,
+  "exact_json_equal": true,
+  "objective_arithmetic_equal": true,
+  "feasibility": true,
+  "results_report_numeric_equal": true,
+  "status": "PASS"
+}

@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "1start-mathmodel format",
+      "passed": true
+    },
+    {
+      "name": "1start-mathmodel reference references/multi-agent.md",
+      "passed": true
+    },
+    {
+      "name": "2analysis-modeling format",
+      "passed": true
+    },
+    {
+      "name": "2analysis-modeling reference ../1start-mathmodel/references/multi-agent.md",
+      "passed": true
+    },
+    {
+      "name": "6verity format",
+      "passed": true
+    },
+    {
+      "name": "6verity reference ../1start-mathmodel/references/multi-agent.md",
+      "passed": true
+    },
+    {
+      "name": "only three existing files changed",
+      "passed": true
+    },
+    {
+      "name": "previous user preference rules preserved",
+      "passed": true
+    },
+    {
+      "name": "previous verdict and return rules preserved",
+      "passed": true
+    }
+  ]
+}

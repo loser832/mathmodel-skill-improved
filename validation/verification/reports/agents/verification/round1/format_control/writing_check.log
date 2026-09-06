@@ -1,0 +1,16 @@
+INFO: paper dir: E:\mathmodel\validation\verification\reports\agents\verification\round1\format_control\project\paper
+INFO: root dir: E:\mathmodel\validation\verification\reports\agents\verification\round1\format_control\project
+INFO: main file: E:\mathmodel\validation\verification\reports\agents\verification\round1\format_control\project\paper\main.tex
+INFO: sections dir: E:\mathmodel\validation\verification\reports\agents\verification\round1\format_control\project\paper\sections
+INFO: results file: E:\mathmodel\validation\verification\reports\agents\verification\round1\format_control\project\reports\RESULTS_REPORT.md
+INFO: detected engine: LaTeX (main suffix: .tex)
+INFO: section file count: 1
+INFO: main include count: 1
+INFO: section length: 1_solution.tex 332 chars
+WARN: section is short: 1_solution.tex (332 chars)
+INFO: section title order:
+INFO:   1. 1_solution.tex -> Problem 1: Allocation
+INFO: figures dir not supplied/found; skip unused figure check
+WARN: references file not supplied/found; skip reference completeness check
+PASS: writing text gate passed
+writing_check exit: 0
