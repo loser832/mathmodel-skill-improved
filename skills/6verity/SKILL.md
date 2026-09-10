@@ -12,6 +12,8 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, WebSearch, WebFetc
 
 如需领域判断，读取 `../_references/math_modeling_norms.md` 中的"论文验收与一致性"小节。该文件只是规范知识库，不是固定执行流程；具体目录、入口文件、结果文件和图表目录由当前项目结构决定。
 
+验收全国大学生数学建模竞赛（CUMCM）中文论文时，还必须读取 `../_references/cumcm_submission_rules.md`，核对当前比赛年份和规则来源，并运行本 skill 的 CUMCM 投稿门禁。其它竞赛不得套用 CUMCM 专用限制。
+
 ## 阶段边界
 
 - 本阶段负责：结构验收、文本质量门禁、图表引用检查、结果一致性检查、Typst/LaTeX 编译检查、PDF 视觉检查、提交清单。
@@ -29,6 +31,8 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, WebSearch, WebFetc
 5. 图表目录
 6. 可复现代码目录。
 7. 编译后的 PDF，或可由入口文件编译得到的输出 PDF。
+8. CUMCM 项目的最终电子论文、支撑材料 `.zip`/`.rar`、AI 使用状态和 `AI工具使用详情.pdf`（使用 AI 时）。
+9. CUMCM 匿名检查应使用会话或 `plan.md` 中已知的参赛者姓名、学校、队号和赛区作为禁用词；不得把这些身份值写进 skill、日志模板或公开报告。
 
 不要假设论文目录一定叫 `paper/`，也不要假设结果文件一定在项目根。若项目使用不同命名，按实际结构传参并在 `reports/VERIFY_REPORT.md` 中说明。
 
@@ -62,12 +66,47 @@ bash "$SCRIPT_PATH" \
   --results-file "$RESULTS_FILE" \
   --problem-analysis "$PROBLEM_ANALYSIS_FILE" \
   --all-results "$ALL_RESULTS_FILE" \
+  --quality-profile general \
   | tee _tmp/writing_check.log
 ```
 
 如果本 skill 被复制到其他目录，使用实际脚本路径。可以先运行 `bash <script> --help` 查看参数。不要把脚本路径、论文目录或文件名写死在验收逻辑中。
 
-脚本只扫描文本，不生成论文，也不编译 PDF。它的 `FAIL` 属于硬错误，必须修复后重跑；脚本的 `PASS` 仅代表文本门禁通过，不代表总体验收通过。脚本或运行环境不可用时，将该检查记为 `NOT_RUN`，按 Step 9 汇总结论。
+一般论文使用 `--quality-profile general`。CUMCM/国赛改传 `--quality-profile cumcm`，并在能从题面可靠提取原题名时追加 `--problem-title "$PROBLEM_TITLE"`；无法可靠提取时省略，脚本会把标题逐字对照记为 `NOT_RUN`，不得据此宣称已经检查。摘要、关键词、研究意义、文献综述和建议属于写作质量告警；自动编号破坏和正文大段代码属于会造成排版漂移或提交内容失控的硬错误。
+
+脚本只扫描文本，不生成论文，也不编译 PDF。它的 `FAIL` 属于硬错误，必须修复后重跑；`WARN` 必须人工判断并在验收报告中记录“修复”或“保留及理由”，不能因脚本退出码为 0 而忽略。脚本的 `PASS` 仅代表没有自动识别到硬错误，不代表告警已处理或总体验收通过。脚本或运行环境不可用时，将该检查记为 `NOT_RUN`，按 Step 9 汇总结论。
+
+### Step 1A: 运行 CUMCM 2026 投稿门禁
+
+仅当竞赛类型为 CUMCM/国赛且采用 2026 规则时运行：
+
+```bash
+python "<本 skill 实际位置>/scripts/cumcm_submission_check.py" \
+  --paper-pdf "$OUTPUT_PDF" \
+  --paper-source "$MAIN_FILE" \
+  --support-archive "$SUPPORT_ARCHIVE" \
+  --ai-usage used \
+  --ai-details "$AI_DETAILS_PDF" \
+  --forbidden-term "$TEAM_MEMBER_NAME" \
+  --forbidden-term "$SCHOOL_NAME" \
+  --forbidden-term "$TEAM_NUMBER" \
+  --forbidden-term "$REGION_NAME" \
+  --identity-terms-complete
+```
+
+按实际情况省略不存在的可选参数：
+
+- 未使用 AI 时传 `--ai-usage not-used`，并核对论文包含官方无 AI 声明。
+- 使用 AI 时必须传 `--ai-usage used`，且 `.zip` 支撑材料内必须恰好包含一个名为 `AI工具使用详情.pdf` 的文件；`--ai-details` 只用于和包内文件做哈希交叉核对，不能替代包内文件。使用 `.rar` 时，`--ai-details` 指向人工解出的同名文件，并保留包内存在性复核证据。
+- 确实没有支撑材料且未使用 AI 时可省略 `--support-archive`，但论文附录必须写明“本论文没有支撑材料”。
+- 身份禁用词只从当前项目的非公开记录传入命令，不写入固定脚本。确认所有已知参赛者、学校、队号和赛区值均已传入后，才增加 `--identity-terms-complete`；无法确认时不加该参数，脚本会把匿名检查记为 `NOT_RUN`，还需人工核对。
+- 脚本无法自动核清附录清单与压缩包、非文本成员或 `.rar` 内容时，先完成人工检查并在 `reports/VERIFY_REPORT.md` 记录对象、方法和证据，再分别增加 `--support-manifest-reviewed`、`--support-content-reviewed`。这些参数是已完成检查的确认，不是跳过检查的开关。
+- 为防止压缩炸弹，ZIP 及其中的 Office Open XML 包自动扫描最多展开 256 MiB、单个成员最多 64 MiB、压缩比最多 200:1；这些是检查器的安全边界，不是竞赛文件大小规则。触发边界时脚本不展开相关成员并返回 `NOT_RUN`，应整理或重新打包为可安全检查的提交结构后重跑，不得直接调高常量绕过验收。
+- 使用 AI 时，自动关键词检查通过后仍须人工核对四类信息是否真实、具体并与论文一致；记录证据后才增加 `--ai-details-reviewed`。缺少这项语义复核时结果保持 `NOT_RUN`。
+
+该脚本检查电子论文首页、目录、A4 页面、正文页数、全部页面的连续居中页码、文件大小、PDF 作者元数据、支撑材料格式与大小、可提取内容、附录清单、源程序、AI 声明和详情 PDF。脚本退出码 `0` 表示门禁通过，`1` 表示硬错误，`2` 表示仍有必需检查 `NOT_RUN`；检查器自身出现未预期异常时也必须返回 `2`，不能伪装成论文硬错误。`.rar` 内容无法用标准库检查时，应人工或使用可用解压工具完成清单、文件名、内容和属性匿名检查；只检查压缩包大小不能判为 `PASS`。
+
+门禁不能替代 Step 8 的逐页视觉检查，也不能仅凭正则表达式证明不存在所有身份泄露。论文或支撑材料在门禁后发生变化时必须重跑。
 
 ### Step 2: 章节数量和标题顺序
 
@@ -108,6 +147,7 @@ bash "$SCRIPT_PATH" \
 - 连续图表之间是否有足够解释文字。
 - caption 是否过长、过泛或与图意不一致。
 - 图表编号、正文引用和章节语义是否一致。
+- 图、表、需引用的行间公式是否使用引擎的自动编号与标签；正文不得写死编号，caption 不得自带“图 1”“表 2”等编号前缀。
 
 不要生成 `*_typst_includes.typ` 或 `*_latex_includes.tex`；图表必须直接嵌在对应 section 中。
 
@@ -120,6 +160,9 @@ bash "$SCRIPT_PATH" \
 - 过多列表式写作（Typst 中大量 `#list`、`enum`，LaTeX 中大量 `\begin{itemize}`、`\begin{enumerate}`）。
 - 段落反复以"如图""由图""图 X 展示了"开头。
 - 图表后没有解释、公式后没有变量含义、结论只报数不解释。
+- 摘要是否包含图、表、代码块或复杂推导公式；标题是否原样照抄题目；CUMCM 关键词是否为 3--5 个并用分号分隔，是否误把软件名当成关键词。
+- 研究意义、相关研究或文献综述、逐题结论，以及适用时的建议/启示是否有明确落点；此项按模板允许等价章节，不机械要求固定标题。
+- 正文是否出现大段完整源码；完整代码应转移到附录或支撑材料。
 
 ### Step 5: 数值和结果一致性
 
@@ -141,6 +184,8 @@ bash "$SCRIPT_PATH" \
 - 中文论文 caption、表题、摘要语言保持中文；英文论文保持英文。
 - 选定的模板入口是否保留所选比赛模板的必要封面、摘要、编号、页眉页脚或提交格式。
 - 不要把模板结构误删成普通空白文档。
+- CUMCM 2026 论文的“AI 工具使用声明”是否位于参考文献之前；使用 AI 时，支撑材料中的 `AI工具使用详情.pdf` 是否包含规定的四类信息。
+- CUMCM 2026 电子论文是否不含承诺书、编号专用页和目录；摘要页是否为第一页并从页码 1 开始；正文、附录和支撑材料的边界是否清楚。
 
 
 ### Step 7: 编译
@@ -282,6 +327,10 @@ PASS / FAIL / BLOCKED
 - 编译器可用但论文编译失败。
 - 编译后的 PDF 为空、缺页、页数异常或页面尺寸异常且无法解释。
 - 视觉检查发现正文、表格、图片、公式、页眉页脚、页码等关键元素重叠、裁切、越界或乱码。
+- CUMCM 2026 电子论文包含目录、承诺书或编号专用页，摘要不是第一页或未从 1 编号，正文超过 30 页，电子论文超过 20 MB，或支撑材料压缩包超过 20 MB。
+- CUMCM 2026 论文或支撑材料泄露已知参赛者、学校、队号或赛区身份信息，或 PDF 作者元数据包含身份信息。
+- CUMCM 2026 附录缺少支撑材料文件清单、必要源程序或相应的无材料/无程序声明。
+- CUMCM 2026 使用 AI 但缺少参考文献前的声明、缺少 `AI工具使用详情.pdf`，或详情未覆盖规定信息。
 
 ## 警告标准
 

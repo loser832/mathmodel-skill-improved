@@ -1,6 +1,33 @@
 # Mathmodel skills 修改记录
 
-最近更新：2026-09-08。状态：跨设备中断接续规则已写入仓库维护源并同步到本机 skill 目录；此前结构化交叉质询、按需多 agent 协作及两轮演练继续作为回归基线。
+最近更新：2026-09-10。状态：CUMCM 2026 第一批投稿硬门禁和第二批写作质量门禁均已写入 E 盘维护源，并定向同步到本机 skill 目录；此前跨设备接续、结构化交叉质询和按需多 agent 协作继续作为回归基线。
+
+## 本轮：CUMCM 论文建议第二批写作质量门禁（2026-09-10）
+
+目的：在第一批投稿硬规则之外，补齐标题、摘要、关键词、研究意义、相关研究、结论建议、自动编号和正文代码篇幅检查；专家写作建议与官方投稿规则分层，避免把存在分歧的写作建议误设为官方硬门禁。
+
+- `skills/5writing/SKILL.md`：补充标题、摘要、关键词、研究意义、相关研究、结论建议、短代码和自动交叉引用要求，并为 Typst/LaTeX 示例增加真实标签引用。
+- CUMCM Typst/LaTeX 的 `main` 与 `1_restatement`：细化标题、摘要和关键词占位说明，加入“研究意义”“相关研究与方法现状”写作入口。
+- `skills/6verity/scripts/writing_check.sh`：新增 `general/cumcm` 质量 profile 和可选原题名；质量建议输出 `WARN` 或 `NOT_RUN`，手写图表公式编号及正文大段完整代码输出 `FAIL`。
+- `skills/6verity/SKILL.md` 与 `skills/_references/math_modeling_norms.md`：明确告警处置、等价章节、长代码归档和自动编号原则。
+
+修改前基线完整备份在本地忽略目录 `skill-backups/cumcm-second-batch-baseline-20260910-170820/`，ZIP SHA-256 为 `08566A4E180AE3A930157BDFBCD75FFB6F09B23FD89D85B72FE50D2340B17AF5`。第二批共修改 8 个文件；E/C 定向同步后逐文件 SHA-256 不一致为 0。写作门禁 5/5 个行为用例符合预期，第一批投稿门禁 74/74 回归通过；`5writing`、`6verity` 在维护源和安装副本均通过格式校验。LaTeX 模板在隔离副本中连续两次编译成功并逐页检查 6 页；当前环境没有 Typst 编译器，Typst 实编译保持 `NOT_RUN`。
+
+详细 diff、同步哈希、测试日志和验证结论见上述本地备份目录。公开仓库记录不包含非公开材料的标题、原路径或原文。
+
+## 本轮：CUMCM 2026 第一批投稿规范（2026-09-10）
+
+目的：把 CUMCM 2026 的公开投稿硬要求落实到中文 Typst/LaTeX 模板和最终验收门禁，同时保持变更范围可回退、可复核，不改动建模逻辑和其它比赛模板。
+
+- `skills/_references/cumcm_submission_rules.md`：新增 CUMCM 2026 公开规则档案；官方基线为[论文格式规范](https://www.mcm.edu.cn/html_cn/node/4cd596519c9eb9fbd866398f6df0caa3.html)和[人工智能工具使用规定](https://www.mcm.edu.cn/html_cn/node/fef94648f2836ab6cc81586f4c38512b.html)。
+- `skills/5writing/SKILL.md` 与两套 CUMCM 模板：摘要作为电子版第一页并从 1 编号；不生成目录；AI 声明位于参考文献之前；结论和附录独立；示例内容改为强制替换的统一占位符。
+- `skills/6verity/scripts/cumcm_submission_check.py`：新增 `0/1/2` 投稿门禁，覆盖 PDF、源码、正文页数、页码、匿名、支撑材料清单、AI 详情、Office/PDF 扩展元数据和压缩安全；无法可靠自动判断时保持 `NOT_RUN`。
+- `skills/6verity/SKILL.md` 与 `writing_check.sh`：接入门禁、人工复核证据和占位符拒绝规则。
+- `.gitignore`：新增 `/skill-backups/`，防止本地修改前备份和机器安装回执进入公开仓库。
+
+修改前已分别完整备份 E 盘维护源和 C 盘安装副本。定向同步 34 个文件后，缺失 0、逐文件 SHA-256 不一致 0；E/C 两处的 `5writing`、`6verity` 均通过格式校验，安装副本完成 74/74 门禁回归。LaTeX 模板在隔离副本中连续两次编译成功并逐页检查 6 页；Typst 静态结构和独立复核通过，但因当前环境无可用 Typst 编译器，实编译如实保留为 `NOT_RUN`。
+
+完整原始备份、修改后快照、逐 skill diff、逐文件同步哈希和验证日志保存在本地忽略目录 `skill-backups/cumcm-first-batch-20260909-203902/`。写入仓库的规则只使用公开官方来源，未记录任何非公开材料的标题、原路径或原文。
 
 ## 本轮：跨设备中断接续（2026-09-08）
 

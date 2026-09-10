@@ -14,11 +14,12 @@
   }
 }
 
-#set document(title: "[论文标题]", author: ())
+#set document(author: ())
 #set page(
   paper: "a4",
   margin: (top: 2.5cm, bottom: 2.5cm, left: 2.5cm, right: 2.5cm),
   numbering: "1",
+  number-align: center + bottom,
 )
 #set text(font: body-font, size: 12.05pt, lang: "zh")
 #set par(
@@ -64,34 +65,17 @@
   keywords-cn(keywords)
   pagebreak()
 }
-#let toc-page() = {
-  show outline.entry.where(level: 1): it => link(
-    it.element.location(),
-    block(above: 7pt)[
-      #text(font: hei-font, size: 12pt, weight: "bold")[
-        #grid(
-          columns: (auto, 1fr, auto),
-          column-gutter: 0.5em,
-          [#it.prefix()#it.body()],
-          [#repeat[.]],
-          [#it.page()],
-        )
-      ]
-    ],
-  )
-  outline(
-    title: align(center)[#text(font: hei-font, size: 17.3pt, weight: "bold")[目录]],
-    depth: 3,
-  )
-  pagebreak()
-}
+#let ai-declaration(body) = [
+#heading(numbering: none, outlined: false)[AI工具使用声明]
+#body
+]
 #let references-cn() = [
-#heading(numbering: none, outlined: true)[参考文献]
+#heading(numbering: none, outlined: false)[参考文献]
 #{ set par(first-line-indent: 0pt, spacing: 0.35em); include("references.typ") }
 ]
-#let appendix-cn(file: "sections/A_code.typ") = [
-#heading(numbering: none, outlined: true)[附录 A #h(1em) 核心代码]
-#include(file)
+#let appendix-cn() = [
+#heading(numbering: none, outlined: false)[附录]
+#include("sections/A_appendix.typ")
 ]
 
 #let three-line-table(caption, columns, header, body, inset: (x: 0.35em, y: 0.52em), cell-align: center) = {
@@ -100,12 +84,11 @@
   let bottom-y = body-rows + 1
   let styled-header = header.map(cell => strong(cell))
 
-  block(width: 100%, breakable: false)[
-    #align(center)[
-      #box[
-        #align(center)[#text(font: hei-font, size: 10.5pt, weight: "bold")[#caption]]
-        #v(0.6em)
-        #table(
+  figure(
+    block(width: 100%, breakable: false)[
+      #align(center)[
+        #box[
+          #table(
           columns: columns,
           align: cell-align,
           stroke: none,
@@ -115,23 +98,25 @@
           table.hline(y: bottom-y, stroke: 0.8pt),
           ..styled-header,
           ..body,
-        )
+          )
+        ]
       ]
-    ]
-  ]
+    ],
+    kind: table,
+    supplement: [表],
+    caption: caption,
+  )
 }
 
 #counter(page).update(1)
 
-#paper-title[[论文标题]]
+#paper-title[[【根据研究对象、核心方法或主要目标拟定标题，不原样照抄赛题标题】]]
 
 #abstract-cn[
-  [中文摘要内容：问题概述 + 每个子问题的方法和数值结果 + 结论]
+  [【按最终结果填写中文摘要：逐个子问题说明方法、模型、关键数值与结论；不插入图、表、代码块或复杂推导公式。】]
 ][
-  [关键词1] #h(1em) [关键词2] #h(1em) [关键词3]
+  [【填写 3--5 个对象/模型/方法关键词，用分号分隔，不使用软件名】]
 ]
-
-#toc-page()
 
 #include("sections/1_restatement.typ")
 #include("sections/2_analysis.typ")
@@ -142,7 +127,10 @@
 #include("sections/7_problem3.typ")
 #include("sections/8_sensitivity.typ")
 #include("sections/9_evaluation.typ")
+#include("sections/10_conclusion.typ")
 
+#pagebreak()
+#ai-declaration[【根据实际使用情况填写官方要求的 AI 工具使用声明。】]
 #pagebreak()
 #references-cn()
 #pagebreak()

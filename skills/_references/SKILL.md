@@ -7,4 +7,4 @@ description: "共享规范知识库。包含数学建模竞赛的写作规范、
 
 本文件夹是共享规范知识库，不是可独立执行的 skill。
 
-其他 skills 在需要领域判断时会读取 `math_modeling_norms.md` 中的相关小节。请勿手动触发此 skill。
+其他 skills 在需要领域判断时会读取 `math_modeling_norms.md` 中的相关小节。全国大学生数学建模竞赛（CUMCM）论文写作或验收还应读取 `cumcm_submission_rules.md`，并按其中记录的版本和官方来源判断规则是否仍然有效。请勿手动触发此 skill。

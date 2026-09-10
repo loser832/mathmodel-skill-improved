@@ -35,6 +35,7 @@ venv/
 
 # Local maintenance archives and machine-specific installation records
 /backups/
+/skill-backups/
 /history/
 /installation-receipt*.json
 /manifest-multi-agent.json

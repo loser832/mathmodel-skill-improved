@@ -17,6 +17,8 @@ Options:
   --problem-analysis FILE
                           Problem analysis file, used only for soft consistency checks.
   --all-results FILE     Aggregated JSON result file. Defaults to <figures-dir>/all_results.json.
+  --quality-profile NAME Writing quality profile: general (default) or cumcm.
+  --problem-title TEXT   Original problem title for verbatim-title comparison.
   --internal-term TEXT   Extra internal workflow term to reject in paper body. Repeatable.
   --no-internal-check    Skip internal workflow filename leak check.
   -h, --help             Show this help.
@@ -36,6 +38,8 @@ FIGURES_DIR="${FIGURES_DIR:-}"
 RESULTS_FILE="${RESULTS_FILE:-}"
 PROBLEM_ANALYSIS_FILE="${PROBLEM_ANALYSIS_FILE:-}"
 ALL_RESULTS_FILE="${ALL_RESULTS_FILE:-}"
+QUALITY_PROFILE="${QUALITY_PROFILE:-general}"
+PROBLEM_TITLE="${PROBLEM_TITLE:-}"
 NO_INTERNAL_CHECK="${NO_INTERNAL_CHECK:-0}"
 EXTRA_INTERNAL_TERMS=()
 POSITIONAL=()
@@ -76,6 +80,14 @@ while [ "$#" -gt 0 ]; do
       ;;
     --all-results)
       ALL_RESULTS_FILE="${2:-}"
+      shift 2
+      ;;
+    --quality-profile)
+      QUALITY_PROFILE="${2:-}"
+      shift 2
+      ;;
+    --problem-title)
+      PROBLEM_TITLE="${2:-}"
       shift 2
       ;;
     --internal-term)
@@ -178,6 +190,7 @@ fi
 
 export PAPER_DIR ROOT_DIR MAIN_FILE SECTIONS_DIR REFERENCES_FILE FIGURES_DIR
 export RESULTS_FILE PROBLEM_ANALYSIS_FILE ALL_RESULTS_FILE NO_INTERNAL_CHECK
+export QUALITY_PROFILE PROBLEM_TITLE
 if [ "${#EXTRA_INTERNAL_TERMS[@]}" -gt 0 ]; then
   EXTRA_INTERNAL_TERMS_STR="$(printf '%s\n' "${EXTRA_INTERNAL_TERMS[@]}")"
 else
@@ -218,6 +231,8 @@ figures_dir = opt_path("FIGURES_DIR")
 results_file = opt_path("RESULTS_FILE")
 problem_analysis = opt_path("PROBLEM_ANALYSIS_FILE")
 all_results = opt_path("ALL_RESULTS_FILE")
+quality_profile = os.environ.get("QUALITY_PROFILE", "general").strip().lower()
+problem_title = os.environ.get("PROBLEM_TITLE", "").strip()
 no_internal_check = os.environ.get("NO_INTERNAL_CHECK") == "1"
 extra_internal_terms = [
     item for item in os.environ.get("EXTRA_INTERNAL_TERMS_STR", "").splitlines()
@@ -292,6 +307,56 @@ def section_sort_key(path):
         return (0, int(match.group(1)), match.group(2))
     return (1, path.name)
 
+def extract_latex_braced_args(text, command, arg_count):
+    """Return top-level braced arguments for the first LaTeX command call."""
+    pattern = re.compile(r"\\" + re.escape(command) + r"\s*")
+    for match in pattern.finditer(text):
+        args = []
+        pos = match.end()
+        valid = True
+        for _ in range(arg_count):
+            while pos < len(text) and text[pos].isspace():
+                pos += 1
+            if pos >= len(text) or text[pos] != "{":
+                valid = False
+                break
+            depth = 0
+            start = pos + 1
+            escaped = False
+            for idx in range(pos, len(text)):
+                ch = text[idx]
+                if escaped:
+                    escaped = False
+                    continue
+                if ch == "\\":
+                    escaped = True
+                    continue
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        args.append(text[start:idx])
+                        pos = idx + 1
+                        break
+            else:
+                valid = False
+                break
+        if valid and len(args) == arg_count:
+            return args
+    return []
+
+def clean_source_text(text):
+    text = re.sub(r"%.*", " ", text)
+    text = re.sub(r"//.*", " ", text)
+    text = re.sub(r"\\[A-Za-z@]+\*?(?:\[[^\]]*\])?", " ", text)
+    text = re.sub(r"[#\\{}\[\]$]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+def code_block_is_large(block):
+    nonblank = [line for line in block.splitlines() if line.strip()]
+    return len(nonblank) >= 20 or len(block) >= 1000
+
 info(f"paper dir: {paper}")
 info(f"root dir: {root}")
 info(f"main file: {main}")
@@ -314,6 +379,11 @@ is_latex = main.suffix == ".tex"
 is_typst = main.suffix == ".typ"
 engine_name = "LaTeX" if is_latex else "Typst"
 info(f"detected engine: {engine_name} (main suffix: {main.suffix})")
+
+if quality_profile not in {"general", "cumcm"}:
+    fail(f"unknown quality profile: {quality_profile}; expected general or cumcm")
+else:
+    info(f"writing quality profile: {quality_profile}")
 
 main_text = read(main)
 
@@ -396,7 +466,10 @@ if problem_analysis and problem_analysis.exists():
 else:
     info("problem analysis file not supplied/found; skip subproblem count check")
 
-placeholder_re = re.compile(r"PLACEHOLDER|TODO|TBD|XXX|待补充|待续写|这里补|示例数据|待完善")
+placeholder_re = re.compile(
+    r"PLACEHOLDER|TODO|TBD|XXX|待补充|待续写|这里补|示例数据|待完善|"
+    r"【[^】]+】"
+)
 default_internal_terms = [
     "RESULTS_REPORT",
     "ANALYSIS_MODELING_REPORT.md",
@@ -480,6 +553,14 @@ for path in typ_files:
             text_without_figures = remove_spans(text, figure_calls)
             if len(figure_calls) >= 2 and len(text_without_figures.strip()) < 1000:
                 warn(f"many figures but little surrounding prose: {path.name}")
+
+            if not is_appendix:
+                fenced_blocks = re.findall(r"```.*?```", text, re.S)
+                raw_blocks = [body for _, _, body in extract_calls(text, "raw") if "block:" in body]
+                for block in fenced_blocks + raw_blocks:
+                    if code_block_is_large(block):
+                        fail(f"large code block appears in paper body; move complete code to appendix/support files: {path.name}")
+                        break
         else:
             # LaTeX heading check: \section{...}
             section_headings = re.findall(r"\\section\{([^}]*)\}", text)
@@ -497,6 +578,20 @@ for path in typ_files:
             if figure_env_count >= 2 and len(text) < 2000:
                 warn(f"many figures but little surrounding prose: {path.name}")
 
+            if not is_appendix:
+                code_blocks = [
+                    match.group(2)
+                    for match in re.finditer(
+                        r"\\begin\{(lstlisting|verbatim|minted)\}.*?\n(.*?)\\end\{\1\}",
+                        text,
+                        re.S,
+                    )
+                ]
+                for block in code_blocks:
+                    if code_block_is_large(block):
+                        fail(f"large code block appears in paper body; move complete code to appendix/support files: {path.name}")
+                        break
+
 paper_text = "\n".join(combined)
 
 if section_titles:
@@ -506,6 +601,81 @@ if section_titles:
     titles = [title for _, title in section_titles]
     if len(titles) != len(set(titles)):
         fail("duplicate level-1 section titles detected")
+
+# Structural quality recommendations are not submission-format rules. They
+# remain warnings so a justified competition-specific structure is not rejected.
+body_text = "\n".join(
+    text
+    for path, text in file_texts
+    if path in section_files and not path.name.startswith("A_")
+)
+if not re.search(r"研究意义|研究价值|实际意义|practical significance|research significance", body_text, re.I):
+    warn("writing quality: research significance/value is not explicit")
+if not re.search(r"文献综述|研究现状|相关工作|国内外研究|literature review|related work", body_text, re.I):
+    warn("writing quality: literature review/related work is not explicit")
+if not re.search(r"结论|总结|conclusion", body_text, re.I):
+    warn("writing quality: no explicit conclusion section detected")
+if not re.search(r"建议|启示|recommendation", body_text, re.I):
+    warn("writing quality: no explicit recommendation/implication detected")
+
+# Title, abstract and keyword checks. The CUMCM profile adds advisory checks
+# from writing guidance; they are separate from official submission hard gates.
+if is_latex:
+    title_args = extract_latex_braced_args(main_text, "papertitle", 1)
+    abstract_args = extract_latex_braced_args(main_text, "abstractcn", 2)
+    paper_title = clean_source_text(title_args[0]) if title_args else ""
+    abstract_text = abstract_args[0] if len(abstract_args) == 2 else ""
+    keyword_text = clean_source_text(abstract_args[1]) if len(abstract_args) == 2 else ""
+else:
+    title_match = re.search(r"#paper-title\s*\[\[(.*?)\]\]", main_text, re.S)
+    abstract_match = re.search(
+        r"#abstract-cn\s*\[\s*\[(.*?)\]\s*\]\s*\[\s*\[(.*?)\]\s*\]",
+        main_text,
+        re.S,
+    )
+    paper_title = clean_source_text(title_match.group(1)) if title_match else ""
+    abstract_text = abstract_match.group(1) if abstract_match else ""
+    keyword_text = clean_source_text(abstract_match.group(2)) if abstract_match else ""
+
+if quality_profile == "cumcm":
+    if not paper_title:
+        warn("CUMCM writing quality: paper title could not be extracted for review")
+    if problem_title and paper_title:
+        norm_paper = re.sub(r"[\W_]+", "", paper_title, flags=re.UNICODE).lower()
+        norm_problem = re.sub(r"[\W_]+", "", problem_title, flags=re.UNICODE).lower()
+        if norm_paper and norm_paper == norm_problem:
+            warn("CUMCM writing quality: paper title repeats the supplied problem title verbatim")
+    elif not problem_title:
+        info("problem title not supplied; verbatim-title comparison NOT_RUN")
+
+    if not abstract_text:
+        warn("CUMCM writing quality: abstract could not be extracted for review")
+    else:
+        if re.search(r"#figure\s*\(|#table\s*\(|\\(?:begin\{(?:figure|table|tabular)|includegraphics)", abstract_text):
+            warn("CUMCM writing quality: abstract contains a figure or table construct")
+        if re.search(r"```|#raw\s*\(|\\begin\{(?:lstlisting|verbatim|minted)\}", abstract_text):
+            warn("CUMCM writing quality: abstract contains a code block")
+        if re.search(r"\\begin\{(?:equation|align|gather|multline)\*?\}|\\\[|(?m:^\s*\$[^$\n]{20,}\$\s*$)", abstract_text):
+            warn("CUMCM writing quality: abstract contains display/complex mathematics; review manually")
+
+    if not keyword_text:
+        warn("CUMCM writing quality: keywords could not be extracted for review")
+    else:
+        keywords = [item.strip() for item in re.split(r"[；;]", keyword_text) if item.strip()]
+        if len(keywords) == 1 and re.search(r"[,，、]", keyword_text):
+            warn("CUMCM writing quality: separate keywords with semicolons, not commas")
+            keywords = [item.strip() for item in re.split(r"[,，、]", keyword_text) if item.strip()]
+        if not 3 <= len(keywords) <= 5:
+            warn(f"CUMCM writing quality: expected 3-5 keywords, found {len(keywords)}")
+        software_re = re.compile(
+            r"^(?:python|matlab|mathematica|excel|spss|stata|r语言|r language|"
+            r"numpy|pandas|scipy|sklearn|scikit-learn|xgboost|lingo|gurobi|cplex|"
+            r"typst|latex|wps|word)$",
+            re.I,
+        )
+        software_hits = [item for item in keywords if software_re.fullmatch(item)]
+        if software_hits:
+            warn("CUMCM writing quality: software/tool names used as keywords: " + ", ".join(software_hits))
 
 # Image reference check: Typst uses image("..."), LaTeX uses \includegraphics{...}
 if is_typst:
@@ -529,32 +699,74 @@ if figures_dir and figures_dir.exists():
 else:
     info("figures dir not supplied/found; skip unused figure check")
 
-# Figure caption check
+# Figure/table caption, label and automatic-numbering checks
 if is_typst:
-    for _, _, body in extract_calls(paper_text, "figure"):
+    direct_typst_figures = []
+    for path, text in file_texts:
+        if path not in section_files:
+            continue
+        for start, end, body in extract_calls(text, "figure"):
+            direct_typst_figures.append((path, text, start, end, body))
+    for path, text, _, end, body in direct_typst_figures:
         if "caption:" not in body:
             fail("figure without caption")
             continue
         cap_match = re.search(r"caption:\s*\[(.*?)\]", body, re.S)
         if cap_match:
             cap = re.sub(r"\s+", " ", cap_match.group(1)).strip()
+            if re.match(r"^(?:图|表|Figure|Table)\s*[0-9一二三四五六七八九十]+(?:[.．、:：-]|\s)", cap, re.I):
+                fail(f"manual number prefix in Typst caption; use automatic numbering: {cap[:80]}")
             if len(cap) > 80:
                 warn(f"long figure caption: {cap[:80]}...")
             if len(cap) < 4:
                 warn("very short figure caption")
+        if not re.match(r"\s*<[-\w:.]+>", text[end:end + 100]):
+            warn(f"Typst figure/table has no adjacent label for cross-reference: {rel(path)}")
 else:
-    # LaTeX: check \begin{figure}...\end{figure} blocks contain \caption{}
-    figure_blocks = re.findall(r"\\begin\{figure\}.*?\\end\{figure\}", paper_text, re.S)
-    for block in figure_blocks:
+    # LaTeX: figures and tables use captions plus labels; equations use labels.
+    figure_blocks = re.findall(r"\\begin\{figure\*?\}.*?\\end\{figure\*?\}", paper_text, re.S)
+    table_blocks = re.findall(r"\\begin\{table\*?\}.*?\\end\{table\*?\}", paper_text, re.S)
+    for kind, block in [("figure", item) for item in figure_blocks] + [("table", item) for item in table_blocks]:
         cap_match = re.search(r"\\caption\{([^}]*)\}", block)
         if not cap_match:
-            fail("LaTeX figure without \\caption{}")
+            fail(f"LaTeX {kind} without \\caption{{}}")
             continue
         cap = re.sub(r"\s+", " ", cap_match.group(1)).strip()
+        if re.match(r"^(?:图|表|Figure|Table)\s*[0-9一二三四五六七八九十]+(?:[.．、:：-]|\s)", cap, re.I):
+            fail(f"manual number prefix in LaTeX caption; use automatic numbering: {cap[:80]}")
         if len(cap) > 80:
             warn(f"long figure caption: {cap[:80]}...")
         if len(cap) < 4:
             warn("very short figure caption")
+        if not re.search(r"\\label\{[^}]+\}", block):
+            warn(f"LaTeX {kind} has no \\label{{}} for cross-reference")
+
+    equation_blocks = re.findall(
+        r"\\begin\{(?:equation|align|gather|multline)\}(.*?)\\end\{(?:equation|align|gather|multline)\}",
+        paper_text,
+        re.S,
+    )
+    for block in equation_blocks:
+        if "\\label{" not in block:
+            warn("numbered LaTeX display equation has no \\label{} for cross-reference")
+    if re.search(r"\\tag\s*\{\s*\d+[A-Za-z]?\s*\}", paper_text):
+        fail("manual LaTeX equation tag detected; use automatic equation numbering")
+
+# Literal source references drift after editing; source must use label/ref syntax.
+hardcoded_ref_re = re.compile(
+    r"(?:如|见|由|根据|in|see)?\s*(?:图|表|式|Figure|Table|Equation|Eq\.)\s*"
+    r"(?:[（(]\s*)?[0-9]+(?:[.-][0-9]+)*(?:\s*[）)])?",
+    re.I,
+)
+for path, text in file_texts:
+    if path not in section_files or path.name.startswith("A_"):
+        continue
+    scrubbed = re.sub(r"\\(?:ref|eqref|autoref|cref)\{[^}]+\}", "", text)
+    scrubbed = re.sub(r"@[-\w:.]+", "", scrubbed)
+    scrubbed = re.sub(r"(?:caption:\s*\[[^\]]*\]|\\caption\{[^}]*\})", "", scrubbed, flags=re.S)
+    match = hardcoded_ref_re.search(scrubbed)
+    if match:
+        fail(f"hard-coded figure/table/equation reference in {rel(path)}: {match.group(0).strip()}")
 
 if refs and refs.exists():
     refs_text = read(refs)
